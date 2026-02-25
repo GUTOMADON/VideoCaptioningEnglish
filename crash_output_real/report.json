@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-02-25T13:32:22.582380",
-  "video_path": "C:\\Users\\Gustavo\\Desktop\\DrApurbasTasks\\VideoAnomaly\\VideoCaptioningEnglish\\VideoAnomaly\\crash_output_real\\input_video.mp4",
+  "generated_at": "2026-02-25T14:01:27.037563",
+  "video_path": "C:\\Users\\Gustavo\\Desktop\\DrApurbasTasks\\VideoAnomaly\\VideoCaptioningEnglish\\VideoAnomaly\\input_video.mp4",
   "blip_model": "Salesforce/blip-image-captioning-large",
   "device": "cpu",
   "config": {
@@ -122,8 +122,8 @@
         "a van driving down a street at night"
       ],
       "all_keywords": [
-        "car",
-        "truck"
+        "truck",
+        "car"
       ]
     }
   ]
