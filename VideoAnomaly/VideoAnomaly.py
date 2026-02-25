@@ -1,30 +1,31 @@
 """
-Video Anomaly Detection — (YouTube Crash Video) + BLIP
-=====================================================
-Downloads a crash video from YouTube, extracts frames at a set rate,
-runs each frame through the BLIP captioning model, and flags frames
-whose descriptions contain anomaly-related keywords (crash, fire, etc.).
-
-Outputs: annotated screenshots, collision-only copies, a timeline chart,
-a frame grid overview, and a full JSON report.
+Video Anomaly Detection using BLIP image captioning.
+----
+Loads (or downloads) a crash video, extracts evenly spaced frames,
+generates natural-language captions for each frame with a BLIP model,
+and flags frames whose captions match anomaly-related keywords
+(for example: crash or collision). 
+Produces annotated screenshots,
+a folder of anomalous (collision) frames, and a JSON
+report summarizing detections and metadata.
 """
 
-import os
-import sys
-import json
+import os # for file system operations
+import sys 
+import json # for saving the final report
 import math
-import shutil
-import stat
-import time
-import subprocess
-import numpy as np
-import cv2
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from PIL import Image, ImageDraw
-from datetime import datetime
+import shutil 
+import stat 
+import time 
+import subprocess # for running yt-dlp to download YouTube videos
+import numpy as np 
+import cv2 
+import matplotlib # for plotting the anomaly timeline chart
+matplotlib.use("Agg") # agg means "Anti-Grain Geometry" and is a non-interactive backend suitable for script-generated images
+import matplotlib.pyplot as plt 
+import matplotlib.patches as mpatches 
+from PIL import Image, ImageDraw # for image manipulation and drawing annotations on screenshots
+from datetime import datetime #timestamp the report and outputs
 from pathlib import Path
 
 # CONFIGURATION!!!
@@ -36,18 +37,19 @@ REPORT_PATH     = os.path.join(OUTPUT_DIR, "report.json")
 CHART_PATH      = os.path.join(OUTPUT_DIR, "anomaly_timeline.png")
 GRID_PATH       = os.path.join(OUTPUT_DIR, "all_frames_grid.jpg")
 
-# YouTube URL of the crash video to analyze
+# YouTube URL of the crash video to analyze that i chose for this demo. 
 YOUTUBE_URL = "https://www.youtube.com/watch?v=OAFWcAzFA98"
 
 # If you already have the video downloaded locally, put its path here.
 # Leave as empty string "" to always download from YouTube.
 LOCAL_VIDEO_PATH = r"C:\Users\Gustavo\Desktop\DrApurbasTasks\VideoAnomaly\VideoCaptioningEnglish\VideoAnomaly\input_video.mp4"
-# --- ALTERAÇÃO FEITA AQUI ---
-EXTRACT_FPS   = 0.2  # 0.5 FPS means 1 frame every 2 seconds/ 1 means 1 second per frame, etc.
+
+# --- ANALYSIS CONFIG, THE CONTROLS FOR HOW MANY FRAMES TO PROCESS
+EXTRACT_FPS   = 0.5  # 0.5 FPS means 1 frame every 2 seconds/ 1 means 1 second per frame, etc.
 MAX_FRAMES    = 60    # cap total frames to keep processing time reasonable
 CHUNK_SIZE    = 15    # number of frames grouped into one temporal chunk
 
-# BLIP model to use. "large" is more accurate, "base" is faster on CPU.
+# BLIP model to use
 BLIP_MODEL = "Salesforce/blip-image-captioning-large"
 
 # Keywords that indicate an anomaly in the BLIP caption
@@ -63,38 +65,35 @@ ANOMALY_KEYWORDS = [
     "car", "vehicle", "truck", "motorcycle",
 ]
 
-# Minimum number of keyword matches needed to mark a frame as anomalous
+# minimum number of keyword matches needed to mark a frame as anomalous
 ANOMALY_THRESHOLD = 1
 
-# FOLDER CLEANUP — wipe previous results so old images don't accumulate
+# FOLDER CLEANUP - wipe previous results so old images don't accumulate
 def clean_output_dirs():
     """
     Deletes and recreates the output sub-folders (frames & collisions) so that
     images from a previous run don't pile up and waste disk space.
-    The video cache is intentionally kept to avoid re-downloading.
-    Includes error handling for Windows locked files (PermissionError).
     """
     print("  Cleaning previous output folders...")
 
     def handle_remove_readonly(func, path, exc):
         """Helper to remove read-only files on Windows."""
         try:
-            os.chmod(path, stat.S_IWRITE)
+            os.chmod(path, stat.S_IWRITE) # make the file writable
             func(path)
         except Exception:
-            pass # Ignore if it still fails
+            pass # ignore if it still fails
 
     # Remove individual sub-directories that hold generated images / reports
     for folder in [SCREENSHOTS_DIR, COLLISION_DIR]:
         if os.path.exists(folder):
             try:
-                # Use onexc for Python 3.12+ compatibility
-                shutil.rmtree(folder, onexc=handle_remove_readonly)
+                shutil.rmtree(folder, onexc=handle_remove_readonly) # recursively delete the folder and its contents, handling read-only files
                 print(f"    Deleted: {folder}")
             except Exception as e:
                 print(f"    [WARNING] Could not completely delete {folder}. Is it open? Error: {e}")
 
-    # Remove leftover chart / grid / report files from the last run
+    # remove leftover chart / grid / report files from the last run
     for leftover in [REPORT_PATH, CHART_PATH, GRID_PATH]:
         if os.path.exists(leftover):
             try:
@@ -103,8 +102,7 @@ def clean_output_dirs():
             except Exception as e:
                 print(f"    [WARNING] Could not delete {leftover}: {e}")
 
-    # Small delay to let the OS release file handles before recreating
-    time.sleep(0.5)
+    time.sleep(0.5) # a delay
 
     # Re-create the now-empty directories
     os.makedirs(OUTPUT_DIR,      exist_ok=True)
@@ -113,7 +111,7 @@ def clean_output_dirs():
 
     print("  Output folders are clean and ready.\n")
 
-# VIDEO DOWNLOAD — supports local file or YouTube via yt-dlp
+# VIDEO DOWNLOAD - supports local file or YouTube via yt-dlp
 def download_video() -> str:
     """
     Returns a local path to the video file.
@@ -127,16 +125,16 @@ def download_video() -> str:
     # Reuse a previously downloaded copy (the cache is NOT wiped on each run)
     if Path(VIDEO_CACHE).exists():
         cap = cv2.VideoCapture(VIDEO_CACHE)
-        if cap.isOpened() and cap.get(cv2.CAP_PROP_FRAME_COUNT) > 10:
+        if cap.isOpened() and cap.get(cv2.CAP_PROP_FRAME_COUNT) > 10: # sanity check to avoid treating a corrupted download as valid
             cap.release()
             size_mb = Path(VIDEO_CACHE).stat().st_size / 1024 / 1024
-            print(f"  Using cached download ({size_mb:.1f} MB): {VIDEO_CACHE}")
+            print(f"Using cached download ({size_mb:.1f} MB): {VIDEO_CACHE}")
             return VIDEO_CACHE
         cap.release()
 
-    print("  Downloading video from YouTube (this may take a few minutes)...")
+    print("Downloading video from YouTube (this may take a few minutes)...")
 
-    # Check that yt-dlp is available before trying to use it
+    # check that yt-dlp is available before trying to use it
     try:
         subprocess.run(["yt-dlp", "--version"], capture_output=True, check=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -147,7 +145,7 @@ def download_video() -> str:
         print("=" * 60)
         sys.exit(1)
 
-    # Download the MP4 stream
+    # Download the video using yt-dlp with specified format and output path
     cmd = [
         "yt-dlp",
         "-f", "best[ext=mp4]",
@@ -167,7 +165,7 @@ def download_video() -> str:
 
     return VIDEO_CACHE
 
-# FRAME EXTRACTION — sample the video at EXTRACT_FPS frames per second
+# FRAME EXTRACTION - sample the video at EXTRACT_FPS frames per second
 def extract_frames(video_path: str) -> list:
     """
     Opens the video and returns up to MAX_FRAMES evenly-spaced PIL Images
@@ -177,7 +175,9 @@ def extract_frames(video_path: str) -> list:
     if not cap.isOpened():
         raise IOError(f"Could not open video: {video_path}")
 
-    native_fps   = cap.get(cv2.CAP_PROP_FPS) or 25.0
+    # Here we read the video's native FPS and total frame count to calculate 
+    # the duration and how to sample frames at the desired EXTRACT_FPS rate
+    native_fps   = cap.get(cv2.CAP_PROP_FPS) or 25.0 
     total_native = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     duration_s   = total_native / native_fps
     
@@ -191,11 +191,13 @@ def extract_frames(video_path: str) -> list:
     frames = []
     idx    = 0
 
+    # Read through the video frame by frame
+    # keeping only those that fall on the sampling interval
     while cap.isOpened() and len(frames) < MAX_FRAMES:
         ret, bgr = cap.read()
         if not ret:
             break
-        # Only keep frames that fall on the sampling interval
+        # only keep frames that fall on the sampling interval
         if idx % step == 0:
             rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
             frames.append({
@@ -210,7 +212,8 @@ def extract_frames(video_path: str) -> list:
     return frames
 
 
-# LOAD BLIP — download weights once, then cache them locally via HuggingFace
+# LOAD BLIP - download weights once, then cache them locally via HuggingFace
+# Hugginface transformers will automatically cache the model weights in a local directory
 def load_blip():
     """
     Loads the BLIP image-captioning model and its processor.
@@ -219,12 +222,13 @@ def load_blip():
     import torch
     from transformers import BlipProcessor, BlipForConditionalGeneration
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "cuda" if torch.cuda.is_available() else "cpu" 
     print(f"  Device : {device.upper()}")
     print(f"  Model  : {BLIP_MODEL}")
     if device == "cpu":
         print("  Tip: CPU is slow. Switch to 'Salesforce/blip-image-captioning-base' for speed.")
-
+    # the difference between the 'base' and 'large' BLIP models is mainly in the size of the underlying vision and language transformer architectures. The 'large' model has more parameters and can potentially generate more detailed and accurate captions, but it also requires more computational resources and runs slower, especially on CPU. The 'base' model is smaller and faster, making it more suitable for quick experiments or when running on less powerful hardware, while the 'large' model may provide better results if you have the resources to run it efficiently.
+    
     processor = BlipProcessor.from_pretrained(BLIP_MODEL)
     model     = BlipForConditionalGeneration.from_pretrained(
         BLIP_MODEL, torch_dtype=torch.float32,
@@ -234,7 +238,7 @@ def load_blip():
     print("  Model loaded.")
     return processor, model, device
 
-# FRAME DESCRIPTION — generate a natural-language caption for one frame
+# FRAME DESCRIPTION - generate a natural-language caption for one frame
 def describe_frame(pil_image, processor, model, device: str) -> str:
     """
     Feeds a single PIL image into BLIP with a dashcam-style prompt and
@@ -259,7 +263,7 @@ def describe_frame(pil_image, processor, model, device: str) -> str:
         caption = caption[len(prompt):].strip().lstrip(",").strip()
     return caption if caption else "description unavailable"
 
-# ANOMALY SCORING — count how many keywords appear in the caption
+# ANOMALY SCORING - count how many keywords appear in the caption
 def score_frame(description: str) -> tuple:
     """
     Scans the caption for anomaly keywords.
@@ -271,7 +275,7 @@ def score_frame(description: str) -> tuple:
     return hits, matched, hits >= ANOMALY_THRESHOLD
 
 
-# SAVE ANNOTATED SCREENSHOT — overlays status bar and colored border on frame
+# SAVE ANNOTATED SCREENSHOT - overlays status bar and colored border on frame
 def save_frame_screenshot(pil_image, frame_info, description,
                            is_anomaly, chunk_idx, keywords) -> str:
     """
@@ -286,11 +290,11 @@ def save_frame_screenshot(pil_image, frame_info, description,
     canvas.paste(pil_image, (0, 0))
     draw   = ImageDraw.Draw(canvas)
 
-    # Red bar for anomalies, green for normal frames
+    # Red bar for anomalies / Green for normal frames
     bar_bg = (160, 15, 15) if is_anomaly else (15, 110, 15)
     draw.rectangle([(0, H), (W, H + BAR_H)], fill=bar_bg)
 
-    status_label = "** ANOMALY DETECTED **" if is_anomaly else "Normal"
+    status_label = "**-ANOMALY DETECTED-**" if is_anomaly else "Normal"
     draw.text((10, H + 5),  status_label,      fill=(255, 255, 255))
     draw.text((10, H + 24),
               f"Frame {frame_info['frame_idx']}  |  t={frame_info['time_sec']:.2f}s  |  Chunk {chunk_idx + 1}",
@@ -303,7 +307,7 @@ def save_frame_screenshot(pil_image, frame_info, description,
     if keywords:
         draw.text((10, H + 61), f"Keywords: {', '.join(keywords)}", fill=(255, 180, 80))
 
-    # Draw a thick red border around anomalous frames for quick visual scanning
+    # draw a thick Red border around anomalous frames for quick visual scanning
     if is_anomaly:
         draw.rectangle([(0, 0), (W - 1, H + BAR_H - 1)],
                        outline=(220, 20, 20), width=5)
@@ -321,7 +325,7 @@ def save_frame_screenshot(pil_image, frame_info, description,
 
     return out_path
 
-# CHUNKING — group frames into fixed-size temporal windows
+# CHUNKING - group frames into fixed-size temporal windows
 def make_chunks(frame_results: list) -> list:
     """
     Divides the list of processed frames into chunks of CHUNK_SIZE.
@@ -346,7 +350,7 @@ def make_chunks(frame_results: list) -> list:
     return chunks
 
 
-# TIMELINE CHART — bar chart of keyword hits per chunk over time
+# TIMELINE CHART - bar chart of keyword hits per chunk over time
 def save_timeline_chart(chunks: list):
     """
     Generates a dark-themed bar chart showing anomaly keyword hits
@@ -357,7 +361,7 @@ def save_timeline_chart(chunks: list):
     ax.set_facecolor("#1a1a2e")
 
     for c in chunks:
-        color = "#e84545" if c["anomaly"] else "#4fc3f7"
+        color = "#e72f2f" if c["anomaly"] else "#4fc3f7"
         w     = max(0.4, (c["time_end"] - c["time_start"]) * 0.82)
         ax.bar(c["time_start"], c["anomaly_count"], width=w, align="edge",
                color=color, alpha=0.90, zorder=3)
@@ -394,7 +398,7 @@ def save_timeline_chart(chunks: list):
     print(f"  Chart saved: {CHART_PATH}")
 
 
-# FRAME GRID — thumbnail overview of all processed frames in one image
+# FRAME GRID - thumbnail overview of all processed frames in one image
 
 def save_frame_grid(frame_results: list):
     """
@@ -446,7 +450,7 @@ def save_frame_grid(frame_results: list):
 # MAIN PIPELINE!!!
 def run():
     print("=" * 68)
-    print("VIDEO ANOMALY DETECTION — Crash Video (YouTube + BLIP)")
+    print("VIDEO ANOMALY DETECTION — Crash Video (YouTube/LOCAL VIDEO + BLIP)")
     print("=" * 68)
     print(f"Start : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Output: {os.path.abspath(OUTPUT_DIR)}/")
@@ -523,7 +527,7 @@ def run():
     print()
 
     # Step 6: save visual outputs
-    print("[Step 6] Saving visualizations")
+    print("[Step 6] Saving visualizations!!!")
     save_timeline_chart(chunks)
     save_frame_grid(frame_results)
     print()
@@ -566,7 +570,7 @@ def run():
     # Final summary 
     print()
     print("=" * 68)
-    print("RESULTS")
+    print("RESULTS!!!")
     print("=" * 68)
     print(f"  Total frames    : {report['summary']['total_frames']}")
     print(f"  Normal frames   : {report['summary']['normal_frames']}")

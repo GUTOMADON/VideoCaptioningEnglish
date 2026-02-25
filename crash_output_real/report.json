@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-02-25T14:01:27.037563",
+  "generated_at": "2026-02-25T18:00:26.354981",
   "video_path": "C:\\Users\\Gustavo\\Desktop\\DrApurbasTasks\\VideoAnomaly\\VideoCaptioningEnglish\\VideoAnomaly\\input_video.mp4",
   "blip_model": "Salesforce/blip-image-captioning-large",
   "device": "cpu",
   "config": {
-    "extract_fps": 0.2,
+    "extract_fps": 0.5,
     "max_frames": 60,
     "chunk_size": 15,
     "anomaly_threshold": 1,
@@ -46,8 +46,8 @@
     ]
   },
   "summary": {
-    "total_frames": 5,
-    "normal_frames": 3,
+    "total_frames": 11,
+    "normal_frames": 9,
     "anomaly_frames": 2,
     "total_chunks": 1,
     "normal_chunks": 0,
@@ -64,13 +64,40 @@
       "screenshot": "crash_output_real\\frames\\frame_00000_t0.00s_normal.jpg"
     },
     {
-      "frame_idx": 75,
-      "time_sec": 5.0,
+      "frame_idx": 30,
+      "time_sec": 2.0,
       "description": "a city street at night",
       "kw_hits": 0,
       "keywords": [],
       "is_anomaly": false,
-      "screenshot": "crash_output_real\\frames\\frame_00075_t5.00s_normal.jpg"
+      "screenshot": "crash_output_real\\frames\\frame_00030_t2.00s_normal.jpg"
+    },
+    {
+      "frame_idx": 60,
+      "time_sec": 4.0,
+      "description": "a city street at night",
+      "kw_hits": 0,
+      "keywords": [],
+      "is_anomaly": false,
+      "screenshot": "crash_output_real\\frames\\frame_00060_t4.00s_normal.jpg"
+    },
+    {
+      "frame_idx": 90,
+      "time_sec": 6.0,
+      "description": "a city street at night",
+      "kw_hits": 0,
+      "keywords": [],
+      "is_anomaly": false,
+      "screenshot": "crash_output_real\\frames\\frame_00090_t6.00s_normal.jpg"
+    },
+    {
+      "frame_idx": 120,
+      "time_sec": 8.0,
+      "description": "a city street at night",
+      "kw_hits": 0,
+      "keywords": [],
+      "is_anomaly": false,
+      "screenshot": "crash_output_real\\frames\\frame_00120_t8.00s_normal.jpg"
     },
     {
       "frame_idx": 150,
@@ -84,15 +111,43 @@
       "screenshot": "crash_output_real\\frames\\frame_00150_t10.00s_ANOMALY.jpg"
     },
     {
-      "frame_idx": 225,
-      "time_sec": 15.0,
-      "description": "a truck driving down a street at night",
-      "kw_hits": 1,
+      "frame_idx": 180,
+      "time_sec": 12.0,
+      "description": "a city street at night",
+      "kw_hits": 0,
+      "keywords": [],
+      "is_anomaly": false,
+      "screenshot": "crash_output_real\\frames\\frame_00180_t12.00s_normal.jpg"
+    },
+    {
+      "frame_idx": 210,
+      "time_sec": 14.0,
+      "description": "a car and truck on a city street at night",
+      "kw_hits": 2,
       "keywords": [
+        "car",
         "truck"
       ],
       "is_anomaly": true,
-      "screenshot": "crash_output_real\\frames\\frame_00225_t15.00s_ANOMALY.jpg"
+      "screenshot": "crash_output_real\\frames\\frame_00210_t14.00s_ANOMALY.jpg"
+    },
+    {
+      "frame_idx": 240,
+      "time_sec": 16.0,
+      "description": "a van driving down a street at night",
+      "kw_hits": 0,
+      "keywords": [],
+      "is_anomaly": false,
+      "screenshot": "crash_output_real\\frames\\frame_00240_t16.00s_normal.jpg"
+    },
+    {
+      "frame_idx": 270,
+      "time_sec": 18.0,
+      "description": "a van driving down a street at night",
+      "kw_hits": 0,
+      "keywords": [],
+      "is_anomaly": false,
+      "screenshot": "crash_output_real\\frames\\frame_00270_t18.00s_normal.jpg"
     },
     {
       "frame_idx": 300,
@@ -111,14 +166,20 @@
       "frame_end": 300,
       "time_start": 0.0,
       "time_end": 20.0,
-      "n_frames": 5,
+      "n_frames": 11,
       "anomaly_count": 2,
       "anomaly": true,
       "descriptions": [
         "a city street at night",
         "a city street at night",
+        "a city street at night",
+        "a city street at night",
+        "a city street at night",
         "a car driving down a street at night",
-        "a truck driving down a street at night",
+        "a city street at night",
+        "a car and truck on a city street at night",
+        "a van driving down a street at night",
+        "a van driving down a street at night",
         "a van driving down a street at night"
       ],
       "all_keywords": [
