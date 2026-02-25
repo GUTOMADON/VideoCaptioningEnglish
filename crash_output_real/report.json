@@ -1,0 +1,130 @@
+{
+  "generated_at": "2026-02-25T13:32:22.582380",
+  "video_path": "C:\\Users\\Gustavo\\Desktop\\DrApurbasTasks\\VideoAnomaly\\VideoCaptioningEnglish\\VideoAnomaly\\crash_output_real\\input_video.mp4",
+  "blip_model": "Salesforce/blip-image-captioning-large",
+  "device": "cpu",
+  "config": {
+    "extract_fps": 0.2,
+    "max_frames": 60,
+    "chunk_size": 15,
+    "anomaly_threshold": 1,
+    "anomaly_keywords": [
+      "crash",
+      "collision",
+      "accident",
+      "impact",
+      "smash",
+      "fire",
+      "smoke",
+      "flames",
+      "burning",
+      "explosion",
+      "fight",
+      "attack",
+      "assault",
+      "violence",
+      "fall",
+      "falling",
+      "collapsed",
+      "on the ground",
+      "running",
+      "fleeing",
+      "chasing",
+      "gun",
+      "weapon",
+      "knife",
+      "overturned",
+      "flipped",
+      "wrong way",
+      "emergency",
+      "ambulance",
+      "police",
+      "car",
+      "vehicle",
+      "truck",
+      "motorcycle"
+    ]
+  },
+  "summary": {
+    "total_frames": 5,
+    "normal_frames": 3,
+    "anomaly_frames": 2,
+    "total_chunks": 1,
+    "normal_chunks": 0,
+    "anomaly_chunks": 1
+  },
+  "frames": [
+    {
+      "frame_idx": 0,
+      "time_sec": 0.0,
+      "description": "a city street at night",
+      "kw_hits": 0,
+      "keywords": [],
+      "is_anomaly": false,
+      "screenshot": "crash_output_real\\frames\\frame_00000_t0.00s_normal.jpg"
+    },
+    {
+      "frame_idx": 75,
+      "time_sec": 5.0,
+      "description": "a city street at night",
+      "kw_hits": 0,
+      "keywords": [],
+      "is_anomaly": false,
+      "screenshot": "crash_output_real\\frames\\frame_00075_t5.00s_normal.jpg"
+    },
+    {
+      "frame_idx": 150,
+      "time_sec": 10.0,
+      "description": "a car driving down a street at night",
+      "kw_hits": 1,
+      "keywords": [
+        "car"
+      ],
+      "is_anomaly": true,
+      "screenshot": "crash_output_real\\frames\\frame_00150_t10.00s_ANOMALY.jpg"
+    },
+    {
+      "frame_idx": 225,
+      "time_sec": 15.0,
+      "description": "a truck driving down a street at night",
+      "kw_hits": 1,
+      "keywords": [
+        "truck"
+      ],
+      "is_anomaly": true,
+      "screenshot": "crash_output_real\\frames\\frame_00225_t15.00s_ANOMALY.jpg"
+    },
+    {
+      "frame_idx": 300,
+      "time_sec": 20.0,
+      "description": "a van driving down a street at night",
+      "kw_hits": 0,
+      "keywords": [],
+      "is_anomaly": false,
+      "screenshot": "crash_output_real\\frames\\frame_00300_t20.00s_normal.jpg"
+    }
+  ],
+  "chunks": [
+    {
+      "index": 0,
+      "frame_start": 0,
+      "frame_end": 300,
+      "time_start": 0.0,
+      "time_end": 20.0,
+      "n_frames": 5,
+      "anomaly_count": 2,
+      "anomaly": true,
+      "descriptions": [
+        "a city street at night",
+        "a city street at night",
+        "a car driving down a street at night",
+        "a truck driving down a street at night",
+        "a van driving down a street at night"
+      ],
+      "all_keywords": [
+        "car",
+        "truck"
+      ]
+    }
+  ]
+}

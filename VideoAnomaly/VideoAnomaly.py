@@ -41,10 +41,9 @@ YOUTUBE_URL = "https://www.youtube.com/watch?v=OAFWcAzFA98"
 
 # If you already have the video downloaded locally, put its path here.
 # Leave as empty string "" to always download from YouTube.
-LOCAL_VIDEO_PATH = r"C:\Users\gutom\OneDrive\Desktop\DrApurbaTasks\VideoAnomaly\crash_output_real\input_video.mp4"
-
+LOCAL_VIDEO_PATH = r"C:\Users\Gustavo\Desktop\DrApurbasTasks\VideoAnomaly\VideoCaptioningEnglish\VideoAnomaly\crash_output_real\input_video.mp4"
 # --- ALTERAÇÃO FEITA AQUI ---
-EXTRACT_FPS   = 1   # 0.5 FPS means 1 frame every 2 seconds/ 1 means 1 second per frame, etc.
+EXTRACT_FPS   = 0.2  # 0.5 FPS means 1 frame every 2 seconds/ 1 means 1 second per frame, etc.
 MAX_FRAMES    = 60    # cap total frames to keep processing time reasonable
 CHUNK_SIZE    = 15    # number of frames grouped into one temporal chunk
 
