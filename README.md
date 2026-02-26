@@ -32,6 +32,3 @@ Report saved to crash_output_real/report.json
 ## Troubleshooting
 - If you get errors about missing packages, install them using pip.
 - Make sure your Python version matches the requirements.
-
-## Contact
-If you have questions or need help, feel free to reach out.
