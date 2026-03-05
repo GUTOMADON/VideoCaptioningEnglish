@@ -1,10 +1,10 @@
 """
 Video Anomaly Detection using BLIP image captioning.
 ----
-Loads (or downloads) a crash video, extracts evenly spaced frames,
+Loads a crash video, extracts evenly spaced frames,
 generates natural-language captions for each frame with a BLIP model,
 and flags frames whose captions match anomaly-related keywords
-(for example: crash or collision). 
+(for example: crash or collision).
 Produces annotated screenshots,
 a folder of anomalous (collision) frames, and a JSON
 report summarizing detections and metadata.
@@ -17,8 +17,7 @@ import math
 import shutil 
 import stat 
 import time 
-import subprocess # for running yt-dlp to download YouTube videos
-import numpy as np 
+import subprocess
 import cv2 
 import matplotlib # for plotting the anomaly timeline chart
 matplotlib.use("Agg") # agg means "Anti-Grain Geometry" and is a non-interactive backend suitable for script-generated images
@@ -37,11 +36,6 @@ REPORT_PATH     = os.path.join(OUTPUT_DIR, "report.json")
 CHART_PATH      = os.path.join(OUTPUT_DIR, "anomaly_timeline.png")
 GRID_PATH       = os.path.join(OUTPUT_DIR, "all_frames_grid.jpg")
 
-# YouTube URL of the crash video to analyze that i chose for this demo. 
-YOUTUBE_URL = "https://www.youtube.com/watch?v=OAFWcAzFA98"
-
-# If you already have the video downloaded locally, put its path here.
-# Leave as empty string "" to always download from YouTube.
 LOCAL_VIDEO_PATH = r"C:\Users\Gustavo\Desktop\DrApurbasTasks\VideoAnomaly\VideoCaptioningEnglish\VideoAnomaly\input_video.mp4"
 
 # --- ANALYSIS CONFIG, THE CONTROLS FOR HOW MANY FRAMES TO PROCESS
@@ -111,59 +105,16 @@ def clean_output_dirs():
 
     print("  Output folders are clean and ready.\n")
 
-# VIDEO DOWNLOAD - supports local file or YouTube via yt-dlp
-def download_video() -> str:
+def get_local_video() -> str:
     """
-    Returns a local path to the video file.
-    Priority: LOCAL_VIDEO_PATH > cached download > fresh YouTube download.
+    Returns the path to the local video file. Raises an error if not found.
     """
-    # Use a local file if the user provided one and it actually exists
     if LOCAL_VIDEO_PATH and Path(LOCAL_VIDEO_PATH).exists():
         print(f"  Using local video: {LOCAL_VIDEO_PATH}")
         return LOCAL_VIDEO_PATH
-
-    # Reuse a previously downloaded copy (the cache is NOT wiped on each run)
-    if Path(VIDEO_CACHE).exists():
-        cap = cv2.VideoCapture(VIDEO_CACHE)
-        if cap.isOpened() and cap.get(cv2.CAP_PROP_FRAME_COUNT) > 10: # sanity check to avoid treating a corrupted download as valid
-            cap.release()
-            size_mb = Path(VIDEO_CACHE).stat().st_size / 1024 / 1024
-            print(f"Using cached download ({size_mb:.1f} MB): {VIDEO_CACHE}")
-            return VIDEO_CACHE
-        cap.release()
-
-    print("Downloading video from YouTube (this may take a few minutes)...")
-
-    # check that yt-dlp is available before trying to use it
-    try:
-        subprocess.run(["yt-dlp", "--version"], capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("\n" + "=" * 60)
-        print("ERROR: yt-dlp is not installed or not found in PATH.")
-        print("Install it with:  pip install yt-dlp")
-        print("Then run the script again.")
-        print("=" * 60)
+    else:
+        print("ERROR: Local video file not found.")
         sys.exit(1)
-
-    # Download the video using yt-dlp with specified format and output path
-    cmd = [
-        "yt-dlp",
-        "-f", "best[ext=mp4]",
-        "--output", VIDEO_CACHE,
-        YOUTUBE_URL,
-    ]
-    try:
-        subprocess.run(cmd, check=True)
-        print("  Download complete.")
-    except subprocess.CalledProcessError as e:
-        print(f"  Download failed: {e}")
-        sys.exit(1)
-
-    if not Path(VIDEO_CACHE).exists():
-        print("  Download failed – output file not found.")
-        sys.exit(1)
-
-    return VIDEO_CACHE
 
 # FRAME EXTRACTION - sample the video at EXTRACT_FPS frames per second
 def extract_frames(video_path: str) -> list:
@@ -460,9 +411,9 @@ def run():
     print("[Step 0] Cleaning previous output...")
     clean_output_dirs()
 
-    # Step 1: get the video 
+    # Step 1: get the video
     print("[Step 1] Obtaining video...")
-    video_path = download_video()
+    video_path = get_local_video()
     print()
 
     # Step 2: pull frames from the video 
