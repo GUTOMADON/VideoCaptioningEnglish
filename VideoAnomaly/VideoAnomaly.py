@@ -1,14 +1,10 @@
 """
 Video Anomaly Detection using BLIP image captioning.
-----
-Loads a crash video, extracts evenly spaced frames,
-generates natural-language captions for each frame with a BLIP model,
-and flags frames whose captions match anomaly-related keywords
-(for example: crash or collision).
-Produces annotated screenshots,
-a folder of anomalous (collision) frames, and a JSON
-report summarizing detections and metadata.
 """
+# Loads crash video, extracts evenly spaced frames
+# Generates natural-language captions per frame using BLIP model
+# Flags frames with captions matching anomaly keywords (e.g., crash, collision)
+# Produces annotated screenshots, folder of anomalous (collision) frames, and JSON report summarizing detections/metadata
 
 import os # for file system operations
 import sys 
@@ -38,7 +34,7 @@ GRID_PATH       = os.path.join(OUTPUT_DIR, "all_frames_grid.jpg")
 
 LOCAL_VIDEO_PATH = r"C:\Users\Gustavo\Desktop\DrApurbasTasks\VideoAnomaly\VideoCaptioningEnglish\VideoAnomaly\input_video.mp4"
 
-# --- ANALYSIS CONFIG, THE CONTROLS FOR HOW MANY FRAMES TO PROCESS
+# ANALYSIS CONFIG, THE CONTROLS FOR HOW MANY FRAMES TO PROCESS
 EXTRACT_FPS   = 0.5  # 0.5 FPS means 1 frame every 2 seconds/ 1 means 1 second per frame, etc.
 MAX_FRAMES    = 60    # cap total frames to keep processing time reasonable
 CHUNK_SIZE    = 15    # number of frames grouped into one temporal chunk
